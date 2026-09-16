@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PBUI Trainer</title>
+  <meta name="description" content="Memorize your Personal Body Unit Index measurements.">
+  <meta name="theme-color" content="#1b1b1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PBUI">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#poster">PBUI<span>_</span>TRAINER</a>
+    <nav class="nav" id="nav">
+      <a href="#poster" data-route="poster">Poster</a>
+      <a href="#measure" data-route="measure">Measure</a>
+      <a href="#quiz" data-route="quiz">Quiz</a>
+      <a href="#progress" data-route="progress">Progress</a>
+    </nav>
+  </header>
+  <main id="app"></main>
+  <div id="toast" hidden></div>
+  <script type="module" src="./js/ui.js"></script>
+</body>
+</html>
