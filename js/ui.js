@@ -10,7 +10,6 @@ import {
 import { APP_VERSION } from './version.js';
 
 const UNIT_IDS = UNITS.map((u) => u.id);
-const FRACTION_CHIPS = ['1/8', '1/4', '3/8', '1/2', '5/8', '3/4', '7/8'];
 
 let state = store.load();
 state.progress = ensureProgress(state.progress, UNIT_IDS);
@@ -66,19 +65,56 @@ function confetti() {
   setTimeout(() => c.remove(), 3200);
 }
 
-function fractionChips(input) {
-  return h('div', { class: 'chips' },
-    FRACTION_CHIPS.map((f) => h('button', {
-      class: 'chip', type: 'button',
-      onclick: () => {
-        const cur = input.value.replace(/"+$/, '').trim();
-        const whole = cur.match(/^(\d+)(?:\s+\d+\/\d+)?$/);
-        input.value = whole ? `${whole[1]} ${f}` : f;
-        input.dispatchEvent(new Event('input'));
-        input.focus();
-      },
-    }, f)),
-  );
+/**
+ * On-screen keypad so the OS keyboard never has to come up. Digits append; a fraction
+ * chip replaces any fraction already typed; backspace removes a whole fraction or unit
+ * in one tap; Clear empties the bar. Works alongside a physical keyboard.
+ */
+function keypad(input, { onEnter } = {}) {
+  const setValue = (v) => { input.value = v; input.dispatchEvent(new Event('input')); };
+  const parts = () => {
+    // split "18 1/2 cm" into { whole: '18', frac: '1/2', unit: ' cm' }
+    const m = input.value.trim().match(/^(.*?)(?:\s*(\d+\/\d+))?\s*(cm|mm|m|"|in)?\s*$/);
+    return { whole: (m && m[1] || '').trim(), frac: m && m[2] || '', unit: m && m[3] || '' };
+  };
+  const join = ({ whole, frac, unit }) => [whole, frac].filter(Boolean).join(' ') + (unit ? ` ${unit}` : '');
+  const press = (key) => {
+    const p = parts();
+    if (/^\d$/.test(key)) {
+      if (p.frac || p.unit) return; // a digit after a fraction makes no sense; ignore
+      setValue(p.whole + key);
+    } else if (key === '.') {
+      if (p.frac || p.unit || p.whole.includes('.')) return;
+      setValue((p.whole || '0') + '.');
+    } else if (/^\d+\/\d+$/.test(key)) {
+      if (p.whole.includes('.')) p.whole = p.whole.replace(/\.\d*$/, '');
+      setValue(join({ whole: p.whole, frac: key, unit: p.unit }));
+    } else if (key === 'cm') {
+      if (!p.whole && !p.frac) return;
+      setValue(join({ whole: p.whole, frac: p.frac, unit: p.unit === 'cm' ? '' : 'cm' }));
+    } else if (key === 'back') {
+      if (p.unit) setValue(join({ whole: p.whole, frac: p.frac, unit: '' }));
+      else if (p.frac) setValue(p.whole);
+      else setValue(p.whole.slice(0, -1));
+    } else if (key === 'clear') {
+      setValue('');
+    }
+  };
+  const btn = (label, key, cls = '') => h('button', {
+    class: `key ${cls}`, type: 'button', 'aria-label': key === 'back' ? 'Backspace' : key === 'clear' ? 'Clear' : label,
+    onpointerdown: (e) => e.preventDefault(), // keep the input from losing focus/scrolling
+    onclick: () => press(key),
+  }, label);
+  const rows = [
+    ['1', '2', '3', '4', '5'].map((d) => btn(d, d)),
+    ['6', '7', '8', '9', '0'].map((d) => btn(d, d)),
+    ['1/8', '1/4', '3/8', '1/2', '5/8'].map((f) => btn(f, f, 'frac')),
+    [btn('3/4', '3/4', 'frac'), btn('7/8', '7/8', 'frac'), btn('.', '.'), btn('cm', 'cm', 'dim'), btn('⌫', 'back', 'dim')],
+  ];
+  const pad = h('div', { class: 'keypad' }, rows.flat(), btn('Clear', 'clear', 'wide dim'));
+  input.setAttribute('inputmode', 'none');
+  if (onEnter) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); onEnter(); } });
+  return pad;
 }
 
 // ---------- routing ----------
@@ -197,14 +233,14 @@ function renderMeasure(arg) {
   poster.spotlight(unit.id);
 
   const input = h('input', {
-    class: 'labelbar', type: 'text', inputmode: 'text', autocomplete: 'off', autocorrect: 'off', spellcheck: 'false',
+    class: 'labelbar', type: 'text', inputmode: 'none', autocomplete: 'off', autocorrect: 'off', spellcheck: 'false',
     placeholder: 'e.g. 18 1/2  or  18.5', value: current ? formatInches(current) : '',
     'aria-label': `${unit.label} measurement in inches`,
   });
   const alt = h('div', { class: 'alt' });
   const updateAlt = () => {
     const v = parseInches(input.value);
-    if (!input.value.trim()) { alt.textContent = 'Inches. Fractions, decimals, feet (7\'9"), or cm all work.'; alt.classList.remove('error'); return; }
+    if (!input.value.trim()) { alt.textContent = 'Inches. Tap the keypad, or type something like 7\'9" or 47 cm.'; alt.classList.remove('error'); return; }
     if (v === null || v <= 0) { alt.textContent = 'Hmm, I can\'t read that. Try 18 1/2, 18.5, 7\'9" or 47 cm.'; alt.classList.add('error'); return; }
     alt.textContent = `= ${formatInches(roundTo16(v))}  ·  ${formatAlt(v)}`;
     alt.classList.remove('error');
@@ -237,7 +273,7 @@ function renderMeasure(arg) {
     h('p', { class: 'howto' }, unit.howto),
     input,
     alt,
-    fractionChips(input),
+    keypad(input),
     h('div', { class: 'actions' },
       h('button', { class: 'btn ghost', disabled: index === 0, onclick: () => saveAndGo(-1) }, 'Back'),
       h('button', { class: 'btn ghost', onclick: () => { persist(); location.hash = `#measure/${index + 1}`; } }, 'Skip'),
@@ -392,7 +428,7 @@ function renderQuestion() {
       answerArea.appendChild(b);
     });
   } else {
-    const input = h('input', { class: 'labelbar', type: 'text', inputmode: 'text', autocomplete: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: 'type it in inches', 'aria-label': `${unit.label} in inches` });
+    const input = h('input', { class: 'labelbar', type: 'text', inputmode: 'none', autocomplete: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: 'in inches', 'aria-label': `${unit.label} in inches` });
     const check = h('button', { class: 'btn primary', type: 'button' }, 'Check');
     const doCheck = () => {
       if (answered) return;
@@ -406,7 +442,7 @@ function renderQuestion() {
     };
     check.addEventListener('click', doCheck);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doCheck(); } });
-    answerArea.append(input, fractionChips(input), check);
+    answerArea.append(input, keypad(input), check);
     setTimeout(() => input.focus({ preventScroll: true }), 50);
   }
 

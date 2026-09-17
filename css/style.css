@@ -156,12 +156,16 @@ input.labelbar:focus { outline-color: var(--orange); }
 .choices { display: grid; gap: 12px; }
 .card.settling .choices, .card.settling .actions { pointer-events: none; }
 .card.settling .labelbar, .card.settling .actions .btn { opacity: 0.7; }
-.chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.chip {
-  border: 1px solid #3c3c39; background: #2a2a28; border-radius: 3px; padding: 6px 10px;
-  font-family: var(--hand); font-size: 18px; color: var(--fg); line-height: 1;
+.keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.key {
+  border: 1px solid #3c3c39; background: #2a2a28; border-radius: 4px; min-height: 46px; padding: 0;
+  font-family: var(--hand); font-size: 24px; font-weight: 600; color: var(--fg); line-height: 1;
+  transition: background 0.1s, transform 0.05s;
 }
-.chip:active { background: #3a3a37; }
+.key.frac { font-size: 20px; }
+.key.dim { font-family: var(--mono); font-size: 13px; letter-spacing: 0.08em; color: var(--muted); }
+.key.wide { grid-column: 1 / -1; min-height: 40px; text-transform: uppercase; }
+.key:active { background: #3e3e3b; transform: translateY(1px); }
 .alt { font-family: var(--mono); font-size: 12px; color: var(--muted); min-height: 1.4em; }
 .alt.error { color: var(--bad); }
 
