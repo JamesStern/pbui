@@ -215,6 +215,24 @@ export function applyAnswer(progress, id, { correct, hints = 0, level }) {
   return { progress, points, promoted, demoted, mastered };
 }
 
+/**
+ * After a miss, put the unit back at the end of the round so it comes around once
+ * everything else has been asked. If that would mean asking it again immediately
+ * (the miss was the last question), one other unit goes in first as a buffer.
+ * At most three re-asks per round. Returns true when the unit was re-queued.
+ */
+export function requeueMiss(round, id, unitIds, rng = Math.random) {
+  if (round.requeued >= 3) return false;
+  if (round.queue.slice(round.index + 1).includes(id)) return false;
+  if (round.queue[round.queue.length - 1] === id) {
+    const pool = unitIds.filter((x) => x !== id);
+    if (pool.length) round.queue.push(pool[Math.floor(rng() * pool.length)]);
+  }
+  round.queue.push(id);
+  round.requeued += 1;
+  return true;
+}
+
 export function masteryStats(progress, unitIds) {
   let mastered = 0;
   let levelSum = 0;

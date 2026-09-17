@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { parseInches, formatInches, fractionParts, roundTo16, sameMeasurement, formatAlt } from '../js/measure.js';
 import {
   newProgress, ensureProgress, pickQueue, makeChoices, hintStages, applyAnswer, scoreAnswer,
-  masteryStats, makeRng, MAX_LEVEL, CHOICES_BY_LEVEL, distractorOffsets,
+  masteryStats, makeRng, MAX_LEVEL, CHOICES_BY_LEVEL, distractorOffsets, requeueMiss,
 } from '../js/quiz.js';
 import { UNITS, FIGURES } from '../js/units.js';
 import { APP_VERSION } from '../js/version.js';
@@ -176,6 +176,22 @@ test('hints are sensible', () => {
   assert.equal(hintStages(18.5)[1].text, '18 inches and a fraction.');
   const big = hintStages(93);
   assert.match(big[0].text, /Between 70" and 120"/);
+});
+test('a miss comes back at the end of the round, never back to back', () => {
+  const rng = makeRng(1);
+  let round = { queue: ['fathom', 'span', 'foot', 'cubit'], index: 1, requeued: 0 };
+  assert.ok(requeueMiss(round, 'span', IDS, rng));
+  assert.deepEqual(round.queue, ['fathom', 'span', 'foot', 'cubit', 'span']);
+  assert.ok(!requeueMiss(round, 'span', IDS, rng), 'already waiting later in the queue');
+  // miss on the very last question: a buffer unit goes in first
+  round = { queue: ['fathom', 'span'], index: 1, requeued: 0 };
+  assert.ok(requeueMiss(round, 'span', IDS, rng));
+  assert.equal(round.queue.length, 4);
+  assert.notEqual(round.queue[2], 'span');
+  assert.equal(round.queue[3], 'span');
+  // cap of three re-asks
+  round = { queue: ['a', 'b'], index: 0, requeued: 3 };
+  assert.ok(!requeueMiss(round, 'a', ['a', 'b'], rng));
 });
 test('ensureProgress fills in missing units', () => {
   const p = ensureProgress({ units: { fathom: { level: 3 } } }, IDS);

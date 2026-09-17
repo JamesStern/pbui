@@ -5,7 +5,7 @@ import { buildPoster } from './poster.js';
 import * as store from './store.js';
 import {
   MAX_LEVEL, CHOICES_BY_LEVEL, ROUND_LENGTH, ensureProgress, pickQueue, makeChoices,
-  hintStages, applyAnswer, masteryStats, newProgress,
+  hintStages, applyAnswer, masteryStats, newProgress, requeueMiss,
 } from './quiz.js';
 import { APP_VERSION } from './version.js';
 
@@ -355,12 +355,7 @@ function renderQuestion() {
       feedback.textContent = correct
         ? `Right, but revealed. ${unit.label} is ${formatInches(value)}.`
         : `Not quite. ${unit.label} is ${formatInches(value)}${chosenText ? `, not ${chosenText}` : ''}.`;
-      // ask again later in the round
-      if (round.requeued < 3 && !round.queue.slice(round.index + 1).includes(id)) {
-        const at = Math.min(round.queue.length, round.index + 3);
-        round.queue.splice(at, 0, id);
-        round.requeued += 1;
-      }
+      requeueMiss(round, id, measuredIds()); // comes back at the end of the round
     }
     hintBtn.hidden = true;
     nextBtn.hidden = false;
@@ -438,7 +433,8 @@ function renderQuestion() {
 
 function renderRoundEnd() {
   round.finished = true;
-  state.progress.bestRound = Math.max(state.progress.bestRound, round.points);
+  const prevBest = state.progress.bestRound;
+  state.progress.bestRound = Math.max(prevBest, round.points);
   persist();
   const ms = masteryStats(state.progress, UNIT_IDS);
   const acc = round.answered ? Math.round((round.correct / round.answered) * 100) : 0;
@@ -457,7 +453,7 @@ function renderRoundEnd() {
     round.mastered.length ? h('p', { class: 'howto' }, h('b', {}, 'Memorized: '), names(round.mastered)) : null,
     round.promoted.length ? h('p', { class: 'howto' }, h('b', {}, 'Moved up: '), names(round.promoted)) : null,
     round.demoted.length ? h('p', { class: 'howto' }, h('b', {}, 'Needs work: '), names(round.demoted)) : null,
-    round.points >= state.progress.bestRound && round.points > 0 ? h('p', { class: 'small muted' }, 'Best round so far.') : null,
+    round.points > prevBest && prevBest > 0 ? h('p', { class: 'small muted' }, `New best round (was ${prevBest}).`) : null,
     h('div', { class: 'actions' },
       h('a', { class: 'btn', href: '#progress' }, 'Progress'),
       h('button', { class: 'btn primary', onclick: () => { startRound(measuredIds()); renderQuestion(); } }, 'Another round'),
