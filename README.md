@@ -10,7 +10,7 @@ Unofficial. The poster design and artwork are © CW&T; buy the real thing, it's 
 
 1. **Measure.** Step through the 17 units. Each step shows the row of the poster with the dimension you're measuring lit up, plus a plain-language how-to. Type inches any way you like: `18 1/2`, `18.5`, `7'9"` or `47 cm`.
 2. **Poster.** Your index, filled in by hand, as on the wall.
-3. **Quiz.** Each unit climbs through four levels: 4 choices, 3 choices, 2 choices, then type it. A correct answer without hints moves it up a level; a miss drops it one. Typing it right in two separate rounds commits the unit to memory. Wrong answers come back later in the same round. There's always a hint button (range, then whole inches, then the answer), and hints cost points.
+3. **Quiz.** Each unit climbs through four levels: 2 choices, 3 choices, 4 choices that crowd the true value, then type it from memory. A correct answer without hints moves it up a level; a miss drops it one. Typing it right in two separate rounds commits the unit to memory. Wrong answers come back later in the same round. There's always a hint button (range, then whole inches, then the answer), and hints cost points.
 4. **Progress.** Per-unit levels, rounds, points, best streak.
 
 Everything is stored on the device. Export/Import moves your index between devices.

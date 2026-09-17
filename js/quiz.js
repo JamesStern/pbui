@@ -3,7 +3,7 @@
 import { roundTo16, formatInches, sameMeasurement } from './measure.js';
 
 export const MAX_LEVEL = 4;
-export const CHOICES_BY_LEVEL = { 1: 4, 2: 3, 3: 2, 4: 0 }; // 0 = type the answer
+export const CHOICES_BY_LEVEL = { 1: 2, 2: 3, 3: 4, 4: 0 }; // 0 = type the answer
 export const ROUND_LENGTH = 10;
 export const MASTERY_TYPED = 2; // typed correctly this many times (separate rounds) => mastered
 
@@ -82,31 +82,41 @@ export function pickQueue(progress, unitIds, n = ROUND_LENGTH, rng = Math.random
   return queue;
 }
 
-/** Plausible wrong answers, scaled to the size of the value. */
-export function distractorOffsets(value) {
-  if (value < 1.5) return [0.125, 0.25, 0.375, 0.5, 0.625, 0.75];
-  if (value < 3) return [0.125, 0.25, 0.375, 0.5, 0.75, 1];
-  if (value < 12) return [0.5, 1, 1.5, 2, 2.5, 3];
-  if (value < 30) return [1, 2, 3, 4, 5, 6];
-  return [2, 3, 4, 5, 6, 8, 10, 12];
+/**
+ * Plausible wrong answers, scaled to the size of the value. Higher levels use the
+ * tighter offsets so the choices crowd the true value; level 1 keeps them far apart.
+ */
+export function distractorOffsets(value, level = 2) {
+  let all;
+  if (value < 1.5) all = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75];
+  else if (value < 3) all = [0.125, 0.25, 0.375, 0.5, 0.75, 1];
+  else if (value < 12) all = [0.5, 1, 1.5, 2, 2.5, 3];
+  else if (value < 30) all = [1, 2, 3, 4, 5, 6];
+  else all = [2, 3, 4, 5, 6, 8, 10, 12];
+  const half = Math.ceil(all.length / 2);
+  if (level <= 1) return all.slice(all.length - half); // wide apart
+  if (level >= 3) return all.slice(0, half);           // close together
+  return all;
 }
 
 /**
  * Build the multiple-choice options for a question.
  * otherValues: the person's other measurements (used as confusable distractors).
+ * level: 1..3; higher levels get closer distractors and lean more on confusables.
  */
-export function makeChoices(value, count, otherValues = [], rng = Math.random) {
+export function makeChoices(value, count, otherValues = [], rng = Math.random, level = 2) {
   const v = roundTo16(value);
   const taken = [v];
   const isTaken = (x) => taken.some((t) => sameMeasurement(t, x));
   const candidates = [];
-  for (const off of distractorOffsets(v)) {
+  for (const off of distractorOffsets(v, level)) {
     if (v - off > 0) candidates.push({ x: roundTo16(v - off), w: 1 });
     candidates.push({ x: roundTo16(v + off), w: 1 });
   }
+  const confusableWeight = level >= 3 ? 2.2 : level === 2 ? 1.6 : 0.8;
   for (const o of otherValues) {
     const ov = roundTo16(o);
-    if (ov > 0 && !sameMeasurement(ov, v) && ov > v * 0.5 && ov < v * 2) candidates.push({ x: ov, w: 1.6 });
+    if (ov > 0 && !sameMeasurement(ov, v) && ov > v * 0.5 && ov < v * 2) candidates.push({ x: ov, w: confusableWeight });
   }
   const options = [v];
   let guard = 0;

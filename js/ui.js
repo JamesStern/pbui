@@ -384,7 +384,7 @@ function renderQuestion() {
   });
 
   if (choicesCount) {
-    const { options, correctIndex } = makeChoices(value, choicesCount, others);
+    const { options, correctIndex } = makeChoices(value, choicesCount, others, Math.random, level);
     options.forEach((opt, i) => {
       const b = h('button', { class: `labelbar ${i % 2 ? 'right' : ''}`, type: 'button' }, opt.text);
       b.addEventListener('click', () => {
@@ -489,7 +489,7 @@ function renderProgress() {
         h('div', { class: 'stat' }, h('b', {}, p.bestStreak), h('span', {}, 'best streak')),
         h('div', { class: 'stat' }, h('b', {}, `${acc}%`), h('span', {}, 'accuracy')),
       ),
-      h('p', { class: 'small muted' }, 'A unit climbs one level per correct answer without hints: 4 choices, 3, 2, then typed. Typing it right in two separate rounds commits it. A miss drops it a level.'),
+      h('p', { class: 'small muted' }, 'A unit climbs one level per correct answer without hints: 2 choices, then 3, then 4 close together, then typed from memory. Typing it right in two separate rounds commits it. A miss drops it a level.'),
     ),
     h('div', { class: 'card' }, h('h2', {}, 'Units'), h('div', {}, rows)),
     h('div', { class: 'card' },

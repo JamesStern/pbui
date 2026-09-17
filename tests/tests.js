@@ -95,7 +95,7 @@ test('choices contain the answer, are distinct and plausible', () => {
   const rng = makeRng(42);
   for (const v of [0.875, 1.375, 4.5, 9, 18.5, 47, 71, 93]) {
     for (let n = 2; n <= 4; n++) {
-      const { options, correctIndex } = makeChoices(v, n, [1.5, 2, 4.5, 72, 93], rng);
+      const { options, correctIndex } = makeChoices(v, n, [1.5, 2, 4.5, 72, 93], rng, n - 1);
       assert.equal(options.length, n, `count for ${v}`);
       assert.ok(sameMeasurement(options[correctIndex].value, v));
       const texts = new Set(options.map((o) => o.text));
@@ -104,9 +104,23 @@ test('choices contain the answer, are distinct and plausible', () => {
     }
   }
 });
-test('distractor offsets scale with size', () => {
+test('distractor offsets scale with size and tighten with level', () => {
   assert.ok(Math.max(...distractorOffsets(0.875)) < 1);
   assert.ok(Math.min(...distractorOffsets(71)) >= 2);
+  assert.ok(Math.min(...distractorOffsets(71, 1)) > Math.max(...distractorOffsets(71, 3)), 'level 1 wide, level 3 tight');
+  assert.deepEqual(distractorOffsets(9, 3), [0.5, 1, 1.5]);
+  assert.deepEqual(distractorOffsets(9, 1), [2, 2.5, 3]);
+});
+test('ladder gets harder: 2 -> 3 -> 4 choices -> typed', () => {
+  assert.deepEqual(CHOICES_BY_LEVEL, { 1: 2, 2: 3, 3: 4, 4: 0 });
+  const rng = makeRng(3);
+  const spread = (opts) => Math.max(...opts.map((o) => o.value)) - Math.min(...opts.map((o) => o.value));
+  let wide = 0, tight = 0;
+  for (let i = 0; i < 30; i++) {
+    wide += spread(makeChoices(71, 2, [], rng, 1).options);
+    tight += spread(makeChoices(71, 4, [], rng, 3).options);
+  }
+  assert.ok(tight / 30 < 8 && wide / 30 >= 5, `level 3 options should crowd the answer (tight avg ${tight / 30}, wide avg ${wide / 30})`);
 });
 test('level progression: up on clean correct, down on wrong, mastery after two typed rounds', () => {
   const p = newProgress(IDS);
