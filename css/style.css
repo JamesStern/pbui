@@ -154,6 +154,8 @@ input.labelbar { font-family: var(--hand); }
 input.labelbar::placeholder { color: #9aa3c2; font-size: 20px; }
 input.labelbar:focus { outline-color: var(--orange); }
 .choices { display: grid; gap: 12px; }
+.card.settling .choices, .card.settling .actions { pointer-events: none; }
+.card.settling .labelbar, .card.settling .actions .btn { opacity: 0.7; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
   border: 1px solid #3c3c39; background: #2a2a28; border-radius: 3px; padding: 6px 10px;

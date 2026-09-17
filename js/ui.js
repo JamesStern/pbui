@@ -366,7 +366,6 @@ function renderQuestion() {
     nextBtn.hidden = false;
     nextBtn.focus({ preventScroll: true });
     persist();
-    if (counted && hintsUsed === 0) setTimeout(() => { if (nextBtn.isConnected) nextBtn.click(); }, 1100);
   };
   nextBtn.addEventListener('click', () => { round.index += 1; renderQuestion(); });
 
@@ -416,7 +415,9 @@ function renderQuestion() {
     setTimeout(() => input.focus({ preventScroll: true }), 50);
   }
 
-  const card = h('div', { class: 'card' },
+  // Brief tap guard: a tap that lands while the next question is appearing must not
+  // hit a choice or the hint button.
+  const card = h('div', { class: 'card settling' },
     header,
     h('div', { class: 'row between' },
       h('div', { class: 'unit-name' }, unit.label, h('small', {}, unit.aka)),
@@ -432,6 +433,7 @@ function renderQuestion() {
   app.appendChild(h('div', { class: 'screen' }, card));
   poster.crop(id);
   requestAnimationFrame(() => poster.crop(id));
+  setTimeout(() => card.classList.remove('settling'), 450);
 }
 
 function renderRoundEnd() {
